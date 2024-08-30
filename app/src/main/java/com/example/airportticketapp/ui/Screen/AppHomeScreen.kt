@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.AbsoluteCutCornerShape
+import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Search
@@ -41,12 +44,18 @@ fun AppHomeScreen(
                  .padding(it)
          ) {
              TextField(
+
+                 shape = AbsoluteRoundedCornerShape(20.dp),
                  label = { Text(text = "adj") },
                  value = "value",
                  onValueChange = { },
-                 modifier = modifier
-                     .fillMaxWidth()
-                     .background(Color(0xFF3B5B7E),),
+                 modifier = Modifier
+                     .padding(
+                         top = 8.dp ,
+                         start = 4.dp ,
+                         end = 4.dp
+                         )
+                     .fillMaxWidth() ,
                  leadingIcon = {
                      IconButton(onClick = { }) {
                          Icon(
