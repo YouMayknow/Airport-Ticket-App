@@ -1,4 +1,4 @@
-package com.example.airportticketapp.data.airport.data
+package com.example.airportticketapp.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

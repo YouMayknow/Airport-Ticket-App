@@ -19,14 +19,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            AirportTicketAppTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    AppHomeScreen(
-                        modifier = Modifier.fillMaxSize()
-                            .padding(innerPadding)
-                    )
 
-                }
+            AirportTicketAppTheme {
+                AirportAppScreen()
             }
         }
     }
