@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
@@ -24,7 +26,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,7 +51,7 @@ fun AppHomeScreen(
     val airportUiState = viewModel.airportUiState.collectAsState()
     var  localTerm by rememberSaveable { mutableStateOf(airportUiState.value.searchWord) }
     val fullAirportList = viewModel.fullAirportList.collectAsState()
-    val getUserSearch = viewModel.getUserSearch.collectAsState()
+    val getUserSearch by  viewModel.getUserSearch.collectAsState()
     val giveSearchSuggestions = viewModel.searchSuggestion(localTerm).collectAsState()
     val getSelectedAirport = viewModel.getSelectedAirport.collectAsState()
      Scaffold(
@@ -59,16 +63,14 @@ fun AppHomeScreen(
                  .fillMaxSize()
                  .padding(it)
          ) {
-            //Button(onClick = {button1 =! button1} , Modifier.size(20.dp)) {}
              AppHomeScreenElements(
                  onValueChange = {
-
                          currentTerm -> localTerm = currentTerm
                      airportUiState.value.searchWord  = currentTerm
                      viewModel.saveUserSearch(currentTerm)
                  },
                  value = localTerm ,
-                 valueFromDatastore = getUserSearch.value.search ,
+                 valueFromDatastore = getUserSearch.search
              )
              if (true) {
                  detailedScreen(
@@ -77,13 +79,14 @@ fun AppHomeScreen(
                      selectedAirport = getSelectedAirport.value.selectedAirport  ?: defaultAirport ,
                      airportSuggestions = giveSearchSuggestions.value.searchList ,
                      fullList = fullAirportList.value.fullList ,
-                     onstarClicked = { departureCode , destinationCOde ->
+                     onstarClicked = {
+                                     departureCode , destinationCOde ->
                          viewModel.addToFavoriteList(Favourite(destination_code = destinationCOde , departure_code = departureCode))
-                     },
-
+                      },
+                     isAddedToFavourite = false,
                  )
              }
-              FavouriteScreen(viewModel = viewModel)
+              FavouriteScreen(viewModel = viewModel , modifier = Modifier)
 
          }
      }
@@ -120,7 +123,7 @@ fun TopAppBar (
 
 @Composable
 fun AppHomeScreenElements (
-    valueFromDatastore : String  ,
+    valueFromDatastore : String ,
     modifier: Modifier = Modifier ,
     onValueChange : (String) -> Unit  ,
     value : String
@@ -130,7 +133,8 @@ fun AppHomeScreenElements (
             shape = AbsoluteRoundedCornerShape(20.dp),
             label = { Text(text = "Search Flight ") },
             value = value ,
-            onValueChange = onValueChange            ,
+            onValueChange = onValueChange ,
+            placeholder = { Text(text = valueFromDatastore )},
             modifier = Modifier
                 .padding(
                     top = 8.dp,
@@ -149,8 +153,8 @@ fun AppHomeScreenElements (
             trailingIcon = {
                 IconButton(onClick = { /*TODO*/ }) {
                     Icon(
-                        painter = painterResource(id = R.drawable.baseline_mic_none_24),
-                        contentDescription = "Voice Search "
+                            painter = painterResource(id = R.drawable.baseline_mic_none_24),
+                            contentDescription = "Voice Search "
                     )
                 }
             },
@@ -164,6 +168,7 @@ enum class  Navigation {
 
 @Composable
 fun detailedScreen (
+    isAddedToFavourite: Boolean ,
     onstarClicked : (String , String ) -> Unit ,
     airportSuggestions  : List<Airport> ,
     fullList : List<Airport> ,
@@ -172,7 +177,7 @@ fun detailedScreen (
     navController: NavHostController  ,
     viewModel: AppHomeScreenViewModel ,
 ) {
-    NavHost(navController = navController, startDestination = Navigation.SuggestionScreen.name) {
+    NavHost(navController = navController, startDestination = Navigation.SuggestionScreen.name , modifier = modifier ) {
         composable(route = Navigation.SuggestionScreen.name) {
             AnimatedVisibility(visible = airportSuggestions.isNotEmpty() , enter = fadeIn()  , exit = fadeOut()) {
                 SuggestionScreen(
@@ -186,7 +191,6 @@ fun detailedScreen (
         }
         composable(
             route = Navigation.SearchScreen.name,
-            // arguments = listOf(navArgument("aitaCode"){type = NavType.StringType})
         ){
             SearchScreen(
                 onStarClicked = onstarClicked ,

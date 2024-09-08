@@ -16,21 +16,24 @@ import com.example.airportticketapp.repository.UserSearchRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.system.measureTimeMillis
+import kotlin.time.measureTime
 
 private const val STOP_TIME_MILLIS = 5_000L
 
 class AppHomeScreenViewModel(
     val airportRepository: AirportRepository ,
     val  userSearchRepository: UserSearchRepository ,
-     savedStateHandle : SavedStateHandle ,
 ) : ViewModel() {
    private  val _airportUiState = MutableStateFlow(AirportUiState())
      val airportUiState : StateFlow<AirportUiState> = _airportUiState
@@ -62,7 +65,6 @@ class AppHomeScreenViewModel(
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIME_MILLIS ) , AirportUiState())
 
 
-
     val getSelectedAirport: StateFlow<AirportUiState> = _airportUiState
         .map { it.idCode }
         .filter { it.isNotBlank() }
@@ -86,17 +88,14 @@ fun updateSelectedAirport (id : String){
     }.stateIn(viewModelScope , SharingStarted.WhileSubscribed(STOP_TIME_MILLIS)  , FavouriteUiState()  )
 
 
-    fun createFavouriteList (favourite : Favourite ) : Pair<StateFlow<Airport> , StateFlow<Airport>> {
-        val airport1  = getAirportByIdCode(favourite.departure_code)
-        val airport2 =getAirportByIdCode(favourite.destination_code)
-      return Pair(airport1, airport2)
-    }
-
-    fun getAirportByIdCode (idCode : String) : StateFlow<Airport> {
-        return airportRepository.getAirportWithIdCode(idCode).filterNotNull()
-            .map {
-                it
-            }.stateIn(viewModelScope , SharingStarted.WhileSubscribed(STOP_TIME_MILLIS)  , defaultAirport)
+    private val airportCache = mutableMapOf<String , StateFlow<AirportLaterUiState??>>()
+    fun getAirportByIdCode(idCode: String): StateFlow<AirportLaterUiState?> {
+        return airportCache.getOrPut(idCode) {
+         airportRepository.getAirportWithIdCode(idCode)
+                .filterNotNull()
+                .map { AirportLaterUiState(it) }
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIME_MILLIS), null)
+        }
     }
 
     fun addToFavoriteList(favourite : Favourite) {
@@ -119,7 +118,6 @@ fun updateSelectedAirport (id : String){
                     AppHomeScreenViewModel(
                          userSearchRepository = userSearchRepository,
                          airportRepository = airportRepository ,
-                         savedStateHandle = this.createSavedStateHandle()
                     )
                }
           }
@@ -145,3 +143,4 @@ data class AirportUiState(
 
 data class UserSearchUiState(val search : String = "" )
 data class FavouriteUiState (val list : List<Favourite> = emptyList())
+data class  AirportLaterUiState(val airport: Airport = defaultAirport)
